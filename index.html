@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REFLEX // Market Move Radar — Nestlé Vietnam (SALES-2 demo)</title>
+<style>
+  :root{
+    --bg:#05090f; --panel:#0a121e; --panel2:#0d1626; --line:#1c2f47;
+    --txt:#d7e6f5; --dim:#7d93ad; --grn:#34f5a3; --amb:#ffb020; --red:#ff4d5e; --cyn:#38bdf8;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:system-ui,'Segoe UI',Roboto,sans-serif;padding:18px 22px 30px}
+  a{color:var(--cyn)}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:14px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .logo{font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:2px}
+  .logo .sl{color:var(--grn)}
+  .sub{font-family:var(--mono);color:var(--dim);font-size:12.5px;letter-spacing:1px}
+  .badge{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1px;padding:5px 11px;border-radius:4px;border:1px solid var(--amb);color:var(--amb)}
+  .live{border-color:var(--grn);color:var(--grn)}
+  .clock{margin-left:auto;font-family:var(--mono);font-size:14px;color:var(--cyn)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+  .kpi .v{font-family:var(--mono);font-size:26px;font-weight:800;color:#fff}
+  .kpi .k{font-size:12px;color:var(--dim);letter-spacing:.6px;text-transform:uppercase;margin-top:2px}
+  .grid{display:grid;grid-template-columns:560px 1fr 400px;gap:14px;align-items:start}
+  @media(max-width:1280px){.grid{grid-template-columns:1fr 1fr}.radarwrap{grid-column:1/-1}}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h2{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:12px}
+  .card h2 b{color:var(--grn)}
+  canvas#radar{width:100%;height:auto;display:block}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:10px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+  .feed{display:flex;flex-direction:column;gap:8px;max-height:640px;overflow:auto}
+  .sig{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--dim);border-radius:6px;padding:10px 12px;cursor:pointer}
+  .sig:hover{border-color:var(--cyn)}
+  .sig.sel{border-color:var(--grn);border-left-color:var(--grn)}
+  .sig.sev-high{border-left-color:var(--red)} .sig.sev-med{border-left-color:var(--amb)} .sig.sev-low{border-left-color:var(--cyn)}
+  .sig .row1{display:flex;gap:8px;align-items:baseline;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .sig .who{color:#fff;font-weight:700;font-size:14.5px;margin:3px 0 2px}
+  .sig .what{font-size:13px;color:var(--txt)}
+  .sig .meta{display:flex;gap:10px;margin-top:6px;font-family:var(--mono);font-size:11px}
+  .score{color:var(--cyn)} .ver{color:var(--grn)} .unver{color:var(--amb)}
+  .sev{font-weight:800;letter-spacing:1px}
+  .sev-high{color:var(--red)} .sev-med{color:var(--amb)} .sev-low{color:var(--cyn)}
+  .detail .who{font-size:20px;font-weight:800;color:#fff}
+  .detail .what{color:var(--txt);margin:4px 0 10px;line-height:1.45}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin-bottom:12px}
+  .kv dt{color:var(--dim);font-family:var(--mono);font-size:11.5px;letter-spacing:.5px}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:74px;margin:6px 0 2px}
+  .bar{flex:1;background:#274b73;border-radius:3px 3px 0 0;position:relative}
+  .bar.drop{background:var(--red)}
+  .bar span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap}
+  .barlbl{display:flex;gap:5px;font-family:var(--mono);font-size:10px;color:var(--dim)} .barlbl div{flex:1;text-align:center}
+  .scen{border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin-top:9px;background:var(--panel2)}
+  .scen h3{font-size:14.5px;color:#fff;display:flex;justify-content:space-between;gap:8px}
+  .scen p{font-size:12.8px;color:var(--txt);line-height:1.45;margin-top:3px}
+  .scen .ir{font-family:var(--mono);font-size:11px;margin-top:6px;display:flex;gap:14px}
+  .impact{color:var(--grn)} .risk{color:var(--amb)}
+  button{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;background:transparent;color:var(--grn);border:1px solid var(--grn);border-radius:5px;padding:6px 12px;cursor:pointer;margin-top:9px}
+  button:hover{background:rgba(52,245,163,.12)}
+  button.ghost{color:var(--dim);border-color:var(--dim)}
+  .log{font-family:var(--mono);font-size:11.8px;color:var(--dim);line-height:1.7;max-height:170px;overflow:auto}
+  .log b{color:var(--grn)}
+  .foot{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;font-size:12.5px;color:var(--dim);line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">REFLEX <span class="sl">//</span> MARKET MOVE RADAR</div>
+    <div class="sub">OSINT INTELLIGENCE FOR COMMERCIAL TEAMS · NESTLÉ VIETNAM · USE CASE SALES-2</div>
+  </div>
+  <span class="badge live">● ENGINE LIVE</span>
+  <span class="badge">DEMO DATA — SYNTHETIC SIGNALS</span>
+  <div class="clock" id="clock">--:--:-- ICT</div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">12,480</div><div class="k">Listings scanned · 24h</div></div>
+  <div class="kpi"><div class="v">9</div><div class="k">Signals on radar</div></div>
+  <div class="kpi"><div class="v">6</div><div class="k">Verified moves</div></div>
+  <div class="kpi"><div class="v">0.91</div><div class="k">Triage precision (demo)</div></div>
+  <div class="kpi"><div class="v">23 min</div><div class="k">Median detection latency</div></div>
+  <div class="kpi"><div class="v">07:00</div><div class="k">Daily digest delivered · ICT</div></div>
+</div>
+
+<div class="grid">
+  <div class="card radarwrap">
+    <h2>Threat scope — <b>channels × recency</b></h2>
+    <canvas id="radar" width="520" height="520"></canvas>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--red)"></span>HIGH</span>
+      <span><span class="dot" style="background:var(--amb)"></span>MEDIUM</span>
+      <span><span class="dot" style="background:var(--cyn)"></span>LOW</span>
+      <span>Rings: 2h · 8h · 24h · 72h ago</span>
+      <span>Sectors: channel</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Signal feed — <b>system one triage → llm verified</b></h2>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div class="card detail" id="detail"></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h2>Decision log — <b>human always decides · the radar never executes</b></h2>
+  <div class="log" id="log">
+    <div><b>07:00</b> — Daily digest delivered to CDT inbox (6 verified moves, 3 scenarios drafted).</div>
+    <div><b>06:58</b> — LLM verification passed for SIG-03 (source capture archived, price history attached).</div>
+    <div><b>06:41</b> — System One triage: 312 candidate changes scanned overnight, 9 passed the materiality threshold.</div>
+  </div>
+</div>
+
+<p class="foot">
+  <b style="color:var(--amb)">Demo notice:</b> all signals, prices and competitor moves on this page are <b>synthetic demo data</b> created for the
+  Nestlé Vietnam AI Reinvention application (use case SALES-2, Market Move Radar). The engine behind it — <b>Reflex</b>, a two-stage
+  market-intelligence agent (calibrated ML triage → LLM verification → human decision, with a hard guardrail against autonomous action) —
+  is real and runs today on live marketplace data in another market. No Nestlé data is used or implied. Pilot proposal: one category ×
+  Modern Trade online + Shopee / Lazada / TikTok Shop, verified digest before 08:00 ICT daily, capture precision/recall audited weekly.
+</p>
+
+<script>
+const SIGNALS = [
+ {id:"SIG-01",t:"07:42",agoH:0.4,chan:"ECOM · SHOPEE",sector:0,sev:"high",who:"Trung Nguyen — Legendee",what:"Flash-sale price cut −18% on 500g ground coffee (189k → 155k VND), 12h window, banner placement.",score:0.93,verified:true,cat:"Coffee",
+  hist:[189,189,187,189,185,189,155],scen:[
+   ["Counter with bounded promo","Match −10% on NESCAFÉ 500g for 48h on Shopee only, funded from the existing promo envelope. Protects the flash-sale window without resetting the shelf price.", "Impact: HIGH — defends the highest-traffic SKU hour", "Risk: MED — margin give-back if the rival sale under-performs"],
+   ["Hold price, add value","Keep price; bundle a free 50g trial of the new variant. Defends margin and seeds the launch.", "Impact: MED — slower, but builds trial", "Risk: LOW — no price signal sent to the market"],
+   ["Monitor only","Rival flash sales in this category historically revert within 24h in 7 of 10 cases. Re-check at 12:00 sweep.", "Impact: LOW — accepts share dip today", "Risk: MED — if the cut becomes permanent, response is a day late"]]},
+ {id:"SIG-02",t:"07:15",agoH:0.9,chan:"ECOM · TIKTOK SHOP",sector:0,sev:"med",who:"Vinacafe — livestream bundle push",what:"Buy-2-get-1 bundle promoted across 3 affiliate livestreams tonight, 19:00–22:00 ICT.",score:0.88,verified:true,cat:"Coffee",
+  hist:[100,100,100,100,100,100,100],scen:[
+   ["Brief creator counter-window","Offer MILO/coffee creators a same-evening slot bonus to hold audience share during 19:00–22:00.", "Impact: MED", "Risk: LOW"],
+   ["Monitor only","Track sell-through at 22:30 sweep; escalate only if bundle extends beyond tonight.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-03",t:"06:58",agoH:1.4,chan:"ECOM · LAZADA",sector:0,sev:"med",who:"Dutch Lady — price promo",what:"−12% on 180ml 4-pack UHT, platform-subsidised voucher stack detected.",score:0.81,verified:true,cat:"Dairy",
+  hist:[62,62,61,62,62,62,55],scen:[
+   ["Match via voucher, not shelf price","Issue a platform voucher of equal face value for the comparable Nestlé pack; shelf price untouched.", "Impact: MED", "Risk: LOW"],
+   ["Monitor only","Platform subsidy ends in 3 days per voucher terms; re-check then.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-04",t:"06:30",agoH:1.9,chan:"MODERN TRADE · WINMART ONLINE",sector:1,sev:"med",who:"Vinamilk — endcap + price move",what:"Online listing shows −8% plus homepage endcap placement for the week.",score:0.77,verified:true,cat:"Dairy",
+  hist:[48,48,48,47,48,48,44],scen:[
+   ["Request matching placement review","Ask the MT account team to review parity placement at the next weekly slot meeting; attach evidence pack.", "Impact: MED", "Risk: LOW"],
+   ["Monitor only","Placement is weekly; revisit at contract checkpoint.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-05",t:"05:47",agoH:2.6,chan:"SOCIAL · CREATOR WAVE",sector:3,sev:"low",who:"New RTD coffee entrant — KOL wave",what:"14 creator posts in 6h pushing a new ready-to-drink coffee; engagement 3.2× category baseline.",score:0.64,verified:false,cat:"Coffee",
+  hist:[10,12,11,13,20,34,46],scen:[
+   ["Watchlist + brief CMI","Add entrant to the weekly competitor pulse; no commercial response yet.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-06",t:"05:12",agoH:3.2,chan:"ECOM · SHOPEE",sector:0,sev:"med",who:"Highlands Coffee — new pack size",what:"New 1L RTD pack listed, priced 8% below the per-ml benchmark of the category leader.",score:0.71,verified:true,cat:"Coffee",
+  hist:[0,0,0,0,0,0,92],scen:[
+   ["Flag to innovation team","New pack architecture is a range decision, not a promo response; route to category strategy with the per-ml analysis.", "Impact: MED (strategic)", "Risk: LOW"],
+   ["Monitor only","Track review velocity for 7 days before escalating.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-07",t:"04:39",agoH:3.8,chan:"TRADITIONAL TRADE · FIELD REPORT",sector:2,sev:"low",who:"Wholesaler discount chatter — HCMC",what:"Unverified field note: a distributor is offering extra 2% on a rival instant-coffee case. Single source.",score:0.42,verified:false,cat:"Coffee",
+  hist:[5,5,5,5,5,5,5],scen:[
+   ["Verify before anything","Route to the branch sales rep for confirmation on today's route; no action on a single unverified source.", "Impact: —", "Risk: LOW"]]},
+ {id:"SIG-08",t:"21:03 −1d",agoH:13.4,chan:"ECOM · SHOPEE",sector:0,sev:"low",who:"King Coffee — export-bundle promo",what:"Cross-border bundle (coffee + phin filter gift) trending in the 'global' storefront.",score:0.58,verified:true,cat:"Coffee",
+  hist:[120,120,118,120,120,114,114],scen:[
+   ["Monitor only","Gift-bundle mechanics already covered in the monthly playbook.", "Impact: LOW", "Risk: LOW"]]},
+ {id:"SIG-09",t:"18:26 −1d",agoH:16.1,chan:"MODERN TRADE · AEON ONLINE",sector:1,sev:"low",who:"TH True Milk — gift promo",what:"Price held; gift-with-purchase (glass set) on family packs.",score:0.69,verified:true,cat:"Dairy",
+  hist:[86,86,86,86,86,86,86],scen:[
+   ["Monitor only","Gift promos in this chain rotate weekly; log and include in the Friday pulse.", "Impact: LOW", "Risk: LOW"]]}
+];
+const SEVC = {high:"#ff4d5e", med:"#ffb020", low:"#38bdf8"};
+let selected = SIGNALS[0];
+
+// sector base angles (radians, 0 = east, CCW positive in math but canvas y is flipped; we just need stable placement)
+const SECTOR_BASE = [ -Math.PI/3, Math.PI/5, Math.PI*0.62, Math.PI*1.15 ]; // ECOM, MT, TT, SOCIAL spread around the dial
+function blipPos(s, i){
+  const ang = SECTOR_BASE[s.sector] + ((i*37)%23 - 11) * 0.012;
+  const r = 30 + Math.min(1, Math.log10(1+s.agoH)/Math.log10(73)) * 205; // centre = now, edge = 72h
+  return {x: 260 + r*Math.cos(ang), y: 260 + r*Math.sin(ang), ang};
+}
+
+const feed = document.getElementById("feed");
+function renderFeed(){
+  feed.innerHTML = SIGNALS.map(s=>`
+   <div class="sig sev-${s.sev} ${s===selected?"sel":""}" data-id="${s.id}">
+     <div class="row1"><span>${s.t}</span><span>${s.chan}</span><span style="margin-left:auto" class="sev sev-${s.sev}">${s.sev.toUpperCase()}</span></div>
+     <div class="who">${s.who}</div>
+     <div class="what">${s.what}</div>
+     <div class="meta"><span class="score">TRIAGE ${s.score.toFixed(2)}</span>
+     ${s.verified?'<span class="ver">✓ LLM-VERIFIED</span>':'<span class="unver">◌ UNVERIFIED</span>'}
+     <span style="color:var(--dim)">${s.cat.toUpperCase()}</span></div>
+   </div>`).join("");
+  feed.querySelectorAll(".sig").forEach(el=>el.onclick=()=>{ selected = SIGNALS.find(x=>x.id===el.dataset.id); renderFeed(); renderDetail(); });
+}
+const log = document.getElementById("log");
+function renderDetail(){
+  const s = selected;
+  const max = Math.max(...s.hist);
+  const bars = s.hist.map((v,i)=>`<div class="bar ${i===s.hist.length-1 && v< s.hist[0]*0.97 ? "drop":""}" style="height:${Math.max(6, v/max*100)}%">${i===s.hist.length-1||i===0?`<span>${v===0?"—":v+"k"}</span>`:""}</div>`).join("");
+  const lbls = s.hist.map((_,i)=>`<div>${i===s.hist.length-1?"NOW":"−"+(s.hist.length-1-i)+"d"}</div>`).join("");
+  document.getElementById("detail").innerHTML = `
+   <h2>Signal detail — <b>${s.id}</b></h2>
+   <div class="detail">
+     <div class="who">${s.who}</div>
+     <p class="what">${s.what}</p>
+     <dl class="kv">
+       <dt>CHANNEL</dt><dd>${s.chan}</dd>
+       <dt>DETECTED</dt><dd>${s.t} ICT · ${s.agoH<24? s.agoH.toFixed(1)+"h ago":"1d ago"}</dd>
+       <dt>TRIAGE</dt><dd>System One score ${s.score.toFixed(2)} (materiality threshold 0.40)</dd>
+       <dt>STATUS</dt><dd>${s.verified? "Verified by LLM agent against source capture" : "Awaiting verification — single source"}</dd>
+       <dt>CATEGORY</dt><dd>${s.cat}</dd>
+     </dl>
+     <h2 style="margin-top:4px">Price / signal history — 7d</h2>
+     <div class="bars">${bars}</div><div class="barlbl">${lbls}</div>
+     <h2 style="margin-top:14px">Response scenarios — <b>drafted, not executed</b></h2>
+     ${s.scen.map((c,i)=>`<div class="scen"><h3>${String.fromCharCode(65+i)}. ${c[0]}</h3><p>${c[1]}</p>
+       <div class="ir"><span class="impact">${c[2]}</span><span class="risk">${c[3]}</span></div>
+       <button data-scen="${c[0]}">DRAFT THIS RESPONSE</button>
+       <button class="ghost" data-dismiss="1">DISMISS</button></div>`).join("")}
+   </div>`;
+  document.querySelectorAll("#detail button[data-scen]").forEach(b=>b.onclick=()=>{
+    const d=document.createElement("div");
+    d.innerHTML = `<b>${new Date().toLocaleTimeString("en-GB")} ICT</b> — Human operator drafted response "${b.dataset.scen}" for ${s.id} (${s.who}). Awaiting CDT approval — nothing executed.`;
+    log.prepend(d);
+  });
+  document.querySelectorAll("#detail button[data-dismiss]").forEach(b=>b.onclick=()=>{
+    const d=document.createElement("div");
+    d.innerHTML = `<b>${new Date().toLocaleTimeString("en-GB")} ICT</b> — Scenario dismissed by operator for ${s.id}. Signal stays on the radar.`;
+    log.prepend(d);
+  });
+}
+
+// radar
+const cv = document.getElementById("radar"), ctx = cv.getContext("2d");
+let sweep = 0;
+function draw(){
+  const W=520, C=260;
+  ctx.clearRect(0,0,W,W);
+  ctx.fillStyle="#071120"; ctx.beginPath(); ctx.arc(C,C,248,0,7); ctx.fill();
+  ctx.strokeStyle="#1c2f47"; ctx.fillStyle="#7d93ad"; ctx.font="10px ui-monospace,monospace";
+  [62,124,186,248].forEach(r=>{ ctx.beginPath(); ctx.arc(C,C,r,0,7); ctx.stroke(); });
+  ["2h","8h","24h","72h"].forEach((t,i)=>ctx.fillText(t, C+6, C-[62,124,186,248][i]+12));
+  for(let k=0;k<12;k++){ const a=k*Math.PI/6; ctx.beginPath(); ctx.moveTo(C+62*Math.cos(a),C+62*Math.sin(a)); ctx.lineTo(C+248*Math.cos(a),C+248*Math.sin(a)); ctx.stroke(); }
+  ctx.fillStyle="#7d93ad"; ctx.font="bold 11px ui-monospace,monospace";
+  ctx.fillText("ECOM", C+150, C-150); ctx.fillText("MODERN TRADE", C+120, C+90);
+  ctx.fillText("TRAD. TRADE", C-90, C+185); ctx.fillText("SOCIAL", C-215, C+40);
+  // sweep
+  const grad = ctx.createConicGradient ? null : null;
+  ctx.save(); ctx.beginPath(); ctx.moveTo(C,C); ctx.arc(C,C,248,sweep-0.5,sweep); ctx.closePath();
+  ctx.fillStyle="rgba(52,245,163,0.07)"; ctx.fill(); ctx.restore();
+  ctx.strokeStyle="rgba(52,245,163,0.8)"; ctx.beginPath(); ctx.moveTo(C,C); ctx.lineTo(C+248*Math.cos(sweep), C+248*Math.sin(sweep)); ctx.stroke();
+  // blips
+  SIGNALS.forEach((s,i)=>{
+    const p = blipPos(s,i);
+    let d = Math.atan2(Math.sin(sweep-p.ang), Math.cos(sweep-p.ang));
+    const glow = Math.max(0, 1 - Math.abs(d)/1.2);
+    ctx.beginPath(); ctx.arc(p.x,p.y, s===selected?7:5, 0, 7);
+    ctx.fillStyle = SEVC[s.sev]; ctx.globalAlpha = 0.45 + 0.55*glow; ctx.fill(); ctx.globalAlpha = 1;
+    if(s===selected){ ctx.beginPath(); ctx.arc(p.x,p.y,12,0,7); ctx.strokeStyle=SEVC[s.sev]; ctx.stroke(); }
+  });
+  sweep += 0.011; if(sweep>Math.PI*2) sweep -= Math.PI*2;
+  requestAnimationFrame(draw);
+}
+function tick(){
+  const now = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Ho_Chi_Minh"}));
+  document.getElementById("clock").textContent = now.toLocaleTimeString("en-GB") + " ICT · HO CHI MINH CITY";
+}
+renderFeed(); renderDetail(); draw(); tick(); setInterval(tick,1000);
+</script>
+</body>
+</html>
